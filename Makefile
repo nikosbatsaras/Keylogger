@@ -1,5 +1,5 @@
 keylogger: keylogger.c
-	gcc -o keylogger keylogger.c
+	gcc -Wall -o keylogger keylogger.c
 
 clean:
 	rm keylogger
