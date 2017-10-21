@@ -7,7 +7,7 @@ OBJECTS = main.o keylogger.o
 all: $(OBJECTS)
 	$(CC) $(CFLAGS) -o keylogger $(OBJECTS)
 
-main.o: main.c keylogger.h
+main.o: main.c keylogger.o
 	$(CC) $(CFLAGS) -c main.c
 
 keylogger.o: keylogger.c keylogger.h
