@@ -7,7 +7,7 @@ sudo ./keylogger output_file
 Here, the output file is the one that will store all the keystrokes.
 
 # Notes
-- Remmember to run it as root ('sudo')
+- Remember to run it as root ('sudo')
 - Check the header file to see if you need to change the path to the keyboard
   device
 
